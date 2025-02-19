@@ -27,12 +27,17 @@ struct RootFeature {
     
     enum Action {
         case path(StackActionOf<Path>)
+        case feature1Tapped
     }
     
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .path:
+                return .none
+                
+            case .feature1Tapped:
+                state.path.append(Path.State.feature1)
                 return .none
             }
         }
@@ -46,14 +51,15 @@ final class StaticNavigationStackController: NavigationStackController {
     
     convenience init(store: StoreOf<RootFeature>) {
         @UIBindable var bindable = store
-        // Could not cast value of type 'UIKitCaseStudies.RootFeature.Path.State' to 'ComposableArchitecture.StackState<UIKitCaseStudies.RootFeature.Path.State>.Component' .
+        // Could not cast value of type 'RootFeature.Path.State' to 'ComposableArchitecture.StackState<RootFeature.Path.State>.Component' .
+        
         // let sub: Store<StackState<RootFeature.Path.State>, StackAction<RootFeature.Path.State, RootFeature.Path.Action> > = store.scope(state: \.path, action: \.path)
         let storePath: UIBinding<Store<StackState<RootFeature.Path.State>, StackAction<RootFeature.Path.State, RootFeature.Path.Action>>> = $bindable.scope(state: \.path, action: \.path)
         
         self.init(
             path: storePath,
             root: {
-                RootFeatureController()
+                RootFeatureController(store: store)
             },
             destination: { store in
                 switch store.case {
@@ -73,7 +79,10 @@ final class StaticNavigationStackController: NavigationStackController {
 }
 
 final class RootFeatureController: UIViewController {
-    init() {
+    private var store: StoreOf<RootFeature>!
+
+    init(store: StoreOf<RootFeature>) {
+        self.store = store
         super.init(nibName: nil, bundle: nil)
     }
     required init?(coder: NSCoder) {
@@ -86,7 +95,8 @@ final class RootFeatureController: UIViewController {
         let feature1Button = UIButton(
             type: .system,
             primaryAction: UIAction { [weak self] _ in
-                self?.traitCollection.push(value: RootFeature.Path.State.feature1)
+                //self?.traitCollection.push(value: RootFeature.Path.State.feature1)
+                self?.store.send(.feature1Tapped)
             })
         feature1Button.setTitle("Push feature 1", for: .normal)
         
